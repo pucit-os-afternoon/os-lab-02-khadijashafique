@@ -1,0 +1,225 @@
+#include <pthread.h>  // header file for threads
+#include <stdio.h>   // header file for standard input and output.
+#include <stdlib.h> // header file for functions involving memory allocation, process control, conversions and others
+#include <unistd.h> //header file that provides access to the POSIX operating system API. (fork, pipe and I/O primitives [read, write, close, etc.] )
+#include <errno.h>  //header file for error handling 
+#include <math.h> //header file for math fast operations 
+
+struct m
+{
+int row;
+int col;
+int value;
+};
+
+void * multiplyer (void * arg);
+//hint 2: any function from math.h isn't required to complete this assignment
+
+int **matrix1;
+int **matrix2;
+int **final;
+
+int main(int arg, char **args)
+{
+	//fetching file path from commandline arguments
+         if(arg !=4)
+       {
+         printf("number of arguments are less\n");
+       }
+  
+       else
+
+	{
+         //write code to open 2 files
+         FILE *f1 = fopen(args[1], "r" );
+         FILE *f2 = fopen(args[2], "r" );
+
+	
+          if(f1==NULL)
+         { 
+          printf("could not open the file1\n");
+          exit(1);
+          }
+
+         if(f2==NULL)
+         {
+          printf("could not open the file2\n");
+         exit(1);
+         }             
+       
+       int M1rows=0,M1cols=0;
+       char line[256];
+
+      //Determining 1st Metrix size 
+      while (fgets(line, sizeof(line),f1))
+      {
+         M1rows=M1rows+1;
+      }
+
+        int l=0;
+       while(line[l]!='\0')
+       {
+         if(line[l]!=' ' && line[l]!='\0')
+         M1cols++;
+
+       l++;
+       }
+       M1cols--;   //bcz reading one extra space
+       fclose(f1);
+       
+
+       //Dertermining 2nd Metrix size
+
+       int M2rows=0,M2cols=0;
+
+        while (fgets(line, sizeof(line),f2))
+      {
+         M2rows=M2rows+1;
+      }
+
+       l=0;
+       while(line[l]!='\0')
+       {
+         if(line[l]!=' ' && line[l]!='\0')
+         M2cols++;
+
+       l++;
+       }
+       M2cols--;
+       fclose(f2);
+      
+
+
+       //creating dynamic matrix
+      
+          matrix1=(int **) malloc(M1rows*sizeof(int *));   
+          matrix2=(int **) malloc(M2rows*sizeof(int *));
+          final=(int **)malloc(M1rows*sizeof(int *));
+        
+        
+       
+        for(int i=0;i<M1cols;i++)
+         {
+          matrix1[i]=(int *) malloc(M1cols*sizeof(int));
+          matrix2[i]=(int *) malloc(M2cols*sizeof(int));
+         }
+
+          for(int i=0;i<M2cols;i++)
+         {
+          matrix2[i]=(int *) malloc(M2cols*sizeof(int));
+          final[i]=(int *)malloc(M2cols*sizeof(int));
+         }
+         
+        
+         int r=0,c=0;
+        f1 = fopen(args[1], "r" );
+        f2 = fopen(args[2], "r" );
+
+       //Assigning Values to 1st Matrix
+       fscanf(f1,"%d",&matrix1[r][c]);
+        while (!feof(f1))		
+        {      
+             c=c+1; 
+              if(c==M1cols)
+             {
+               c=0;
+               r=r+1;
+             }
+         fscanf(f1,"%d",&matrix1[r][c]);
+          
+        }
+      fclose(f1);
+    
+       //Assigning Vlues to 2nd Matrix
+        r=0;c=0;
+        fscanf(f2,"%d",&matrix2[r][c]);
+        while (!feof(f2))		
+        {      
+             c=c+1; 
+              if(c==M2cols)
+             {
+               c=0;
+               r=r+1;
+             }
+         fscanf(f2,"%d",&matrix2[r][c]);
+          
+        }
+      fclose(f2);
+
+    //Determining whether mertix are multiplyable or not
+     if(M1cols!=M2rows)
+     {
+       printf("matrix are not multiplyable\n");
+       exit(1);
+      }
+
+
+       //printing values of matrix   
+        for(int r=0;r<M1rows;r++)
+         {
+          for(int c=0;c<M1cols;c++)
+          {
+           printf("%d", matrix1[r][c]);
+           printf("%d",matrix2[r][c]);
+           printf("\t");
+           }
+         printf("\n");
+
+     
+     for(int i=0;i<M1rows;i++)
+     {
+      for(int j=0;j<M2cols;j++)
+      {
+       struct m *data=(struct m*) malloc(sizeof(struct m));
+       data->row=i;
+       data->col=j;
+       data->value=M1cols;
+
+      pthread_t tid;
+      pthread_attr_t attr;
+      pthread_attr_init(&attr);
+      pthread_create(&tid,&attr,multiplyer,(void*)(data));
+      pthread_join(tid,NULL);
+      
+      }
+     }
+ }  
+
+//writing data to file
+ FILE *result=fopen(args[3], "w" );
+   
+  if(result==NULL)
+   {
+     printf("cannnot open the file\n");
+     exit(1);
+    }
+ 
+  for(int i=0;i<M1rows;i++)
+  {
+   for(int j=0;j<M2cols;j++)
+   {
+    fprintf(result,"%d",final[i][j]);
+    fprintf(result," ");
+   }
+   fprintf(result,"\n");
+  }
+ fclose(result);
+
+ }     
+}
+
+void * multiplyer (void * arg)
+{
+   
+  struct m *info=arg;
+  int v,k,sum=0;
+   v=info->value;
+   
+  for(k=0;k<v;k++)
+{
+sum+=matrix1[info->row][k]*matrix2[k][info->col];
+}      
+ 
+final[info->row][info->col]=sum;
+pthread_exit(0);  
+}
